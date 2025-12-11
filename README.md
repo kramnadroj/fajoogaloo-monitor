@@ -37,9 +37,39 @@ You can also trigger it manually:
 2. Select "Monitor Deep Dip 2 Progress"
 3. Click "Run workflow"
 
-## Notification Options
+## Notification Setup (Discord)
 
-The notification method is currently a **placeholder**. Here are some options to implement:
+This project uses **Discord webhooks** for notifications. When fajoogaloo reaches floor 15, you'll receive a Discord notification with an embedded message showing the achievement.
+
+### Setting Up Discord Notifications
+
+1. **Create a Discord webhook:**
+   - Open your Discord server
+   - Right-click the channel you want notifications in (e.g., #dd2-alerts)
+   - Click **Integrations** → **Webhooks** → **New Webhook**
+   - Copy the webhook URL
+
+2. **Add webhook to GitHub:**
+   - Go to your repository **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
+   - Name: `DISCORD_WEBHOOK_URL`
+   - Value: Paste your webhook URL
+   - Click **Add secret**
+
+3. **Done!** When floor 15 is reached, you'll get a notification like:
+   ```
+   @everyone
+   🎉 FLOOR 15 REACHED! 🎉
+   fajoogaloo has reached floor 15 in Deep Dip 2!
+   Height Achieved: 1938m+
+   Floor 15 Threshold: 1938m
+   ```
+
+---
+
+## Alternative Notification Options
+
+If you prefer a different notification method, here are some alternatives:
 
 ### Option 1: Discord Webhook
 ```yaml

@@ -26,38 +26,50 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run monitoring script
-        run: |
-          python monitor_player.py
-
-      - name: Check for floor 15 notification
+      - name: Run monitoring script and check for floor 15
         id: check_notification
         run: |
-          # Capture script output and check if floor 15 was reached
+          # Run script and capture output
           OUTPUT=$(python monitor_player.py)
           echo "$OUTPUT"
 
+          # Check if floor 15 was reached
           if echo "$OUTPUT" | grep -q "FLOOR 15 REACHED"; then
             echo "floor_15_reached=true" >> $GITHUB_OUTPUT
+
+            # Extract height from output for Discord message
+            HEIGHT=$(echo "$OUTPUT" | grep -oP 'Height: \K[0-9.]+' || echo "1938+")
+            echo "height=$HEIGHT" >> $GITHUB_OUTPUT
           else
             echo "floor_15_reached=false" >> $GITHUB_OUTPUT
           fi
 
-      # Placeholder for notification step
-      # You can add notification logic here once you decide on the method
-      # Examples:
-      # - Discord webhook
-      # - Email via SendGrid
-      # - Slack webhook
-      # - GitHub Issues
-      # - SMS via Twilio
-
-      - name: Send notification (placeholder)
+      - name: Send Discord notification
         if: steps.check_notification.outputs.floor_15_reached == 'true'
         run: |
-          echo "🎉 Notification triggered: fajoogaloo reached floor 15!"
-          echo "TODO: Implement actual notification method"
-          # Example Discord webhook (uncomment and add webhook URL as secret):
-          # curl -H "Content-Type: application/json" \
-          #      -d '{"content":"🎉 fajoogaloo has reached floor 15 in Deep Dip 2!"}' \
-          #      ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" \
+               -d '{
+                 "content": "@everyone",
+                 "embeds": [{
+                   "title": "🎉 FLOOR 15 REACHED! 🎉",
+                   "description": "**fajoogaloo** has reached floor 15 in Deep Dip 2!",
+                   "color": 5814783,
+                   "fields": [
+                     {
+                       "name": "Height Achieved",
+                       "value": "${{ steps.check_notification.outputs.height }}m",
+                       "inline": true
+                     },
+                     {
+                       "name": "Floor 15 Threshold",
+                       "value": "1938m",
+                       "inline": true
+                     }
+                   ],
+                   "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
+                   "footer": {
+                     "text": "Deep Dip 2 Monitor"
+                   }
+                 }]
+               }' \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
