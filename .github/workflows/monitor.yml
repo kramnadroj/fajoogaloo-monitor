@@ -35,13 +35,16 @@ jobs:
 
           # Check if floor 15 was reached
           if echo "$OUTPUT" | grep -q "FLOOR 15 REACHED"; then
-            echo "floor_15_reached=true" >> $GITHUB_OUTPUT
+            echo "floor_15_reached=true" >> "$GITHUB_OUTPUT"
 
-            # Extract height from output for Discord message
-            HEIGHT=$(echo "$OUTPUT" | grep -oP 'Height: \K[0-9.]+' || echo "1938+")
-            echo "height=$HEIGHT" >> $GITHUB_OUTPUT
+            # Extract height and round to 2 decimal places
+            HEIGHT=$(echo "$OUTPUT" | grep -o 'Height: [0-9.]*' | head -1 | awk '{printf "%.2f", $2}')
+            if [ -z "$HEIGHT" ]; then
+              HEIGHT="1938.00"
+            fi
+            echo "height=${HEIGHT}" >> "$GITHUB_OUTPUT"
           else
-            echo "floor_15_reached=false" >> $GITHUB_OUTPUT
+            echo "floor_15_reached=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Send Discord notification
