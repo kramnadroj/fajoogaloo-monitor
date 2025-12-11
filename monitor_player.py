@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 PLAYER_NAME = "fajoogaloo"
-FLOOR_15_HEIGHT = 100.0  # meters (TESTING - change back to 1938.0 after Discord test works)
+FLOOR_15_HEIGHT = 1938.0
 API_BASE_URL = "https://dips-plus-plus.xk.io"
 
 def get_player_height(player_name):
