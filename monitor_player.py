@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Deep Dip 2 Player Monitor
-Monitors fajoogaloo's progress on Deep Dip 2 and alerts when reaching floor 15 (1938m)
+Monitors fajoogaloo's progress on Deep Dip 2 and alerts when reaching floor 15 (1500m)
 """
 
 import requests
@@ -10,7 +10,7 @@ from datetime import datetime
 
 # Configuration
 PLAYER_NAME = "fajoogaloo"
-FLOOR_15_HEIGHT = 100.0  # meters (TESTING - change back to 1938.0 after Discord test works)
+FLOOR_15_HEIGHT = 1500.0  # meters
 API_BASE_URL = "https://dips-plus-plus.xk.io"
 
 def get_player_height(player_name):
