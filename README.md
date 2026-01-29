@@ -2,6 +2,19 @@
 
 Monitors the Trackmania player **fajoogaloo** on the Deep Dip 2 map and sends notifications when they reach floor 15 (1938 meters).
 
+## Current Progress
+
+![Height Progress Chart](charts/height_progress.png)
+
+*Chart updates automatically every 10 minutes*
+
+**Latest Stats:**
+- Check the chart above for real-time progress
+- Target: Floor 15 at 1500 meters
+- Monitoring runs every 10 minutes via GitHub Actions
+
+---
+
 ## How It Works
 
 - **Monitoring Script**: `monitor_player.py` fetches player data from the Deep Dip 2 API every 10 minutes

@@ -7,6 +7,9 @@ Monitors fajoogaloo's progress on Deep Dip 2 and alerts when reaching floor 15 (
 import requests
 import sys
 from datetime import datetime
+import json
+import os
+from pathlib import Path
 
 # Configuration
 PLAYER_NAME = "fajoogaloo"
@@ -113,6 +116,61 @@ def send_notification(player_name, height, player_data):
     # Options: Discord webhook, Email, Slack, SMS, etc.
     # For now, just print to stdout
 
+def record_height_data(height, is_playing, player_name):
+    """
+    Record height data to JSON file for historical tracking.
+
+    Args:
+        height: Current height in meters (or None if not playing)
+        is_playing: Boolean indicating if player is currently active
+        player_name: Name of the player
+    """
+    data_file = Path("data/heights.json")
+    timestamp = datetime.now().isoformat()
+
+    # Create data directory if it doesn't exist
+    data_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Initialize or load existing data
+    if not data_file.exists():
+        data = {
+            "player": player_name,
+            "floor_target": FLOOR_15_HEIGHT,
+            "last_updated": timestamp,
+            "data_points": []
+        }
+    else:
+        try:
+            with open(data_file, 'r') as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            # Handle corrupted file by backing it up
+            backup_file = data_file.with_suffix(f'.json.backup.{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            print(f"⚠️  Corrupted data file detected. Backing up to {backup_file}")
+            os.rename(data_file, backup_file)
+            # Reinitialize data structure
+            data = {
+                "player": player_name,
+                "floor_target": FLOOR_15_HEIGHT,
+                "last_updated": timestamp,
+                "data_points": []
+            }
+
+    # Append new data point
+    data_point = {
+        "timestamp": timestamp,
+        "live_height": height,
+        "is_playing": is_playing
+    }
+    data["data_points"].append(data_point)
+    data["last_updated"] = timestamp
+
+    # Write back to file
+    with open(data_file, 'w') as f:
+        json.dump(data, f, indent=2)
+
+    print(f"📝 Height data recorded: {height}m at {timestamp}")
+
 def main():
     """Main monitoring function."""
     print(f"Checking {PLAYER_NAME}'s progress on Deep Dip 2...")
@@ -130,6 +188,7 @@ def main():
         print(f"Player '{PLAYER_NAME}' is not currently playing (no live session)")
         if player_data and 'height' in player_data:
             print(f"Personal Best: {player_data['height']}m")
+        record_height_data(None, False, PLAYER_NAME)
         return
 
     # Display current live height and PB
@@ -137,6 +196,7 @@ def main():
     if 'pb_height' in player_data:
         print(f"🏆 Personal Best: {player_data['pb_height']}m")
     print(f"🎯 Floor 15 Target: {FLOOR_15_HEIGHT}m")
+    record_height_data(height, True, PLAYER_NAME)
 
     # Check if floor 15 has been reached
     if check_floor_15_reached(height):
