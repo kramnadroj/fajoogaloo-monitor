@@ -11,6 +11,8 @@ on:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -45,6 +47,25 @@ jobs:
             echo "height=${HEIGHT}" >> "$GITHUB_OUTPUT"
           else
             echo "floor_15_reached=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate height tracking chart
+        run: |
+          python generate_chart.py
+
+      - name: Commit height data and chart
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/heights.json charts/height_progress.png
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            git commit -m "chore: update height data and chart - ${TIMESTAMP}"
+            git push
           fi
 
       - name: Send Discord notification
