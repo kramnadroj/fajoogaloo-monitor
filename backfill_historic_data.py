@@ -26,6 +26,7 @@ from pathlib import Path
 REPO_OWNER = "kramnadroj"
 REPO_NAME = "fajoogaloo-monitor"
 WORKFLOW_NAME = "Monitor Deep Dip 2 Progress"
+WORKFLOW_ID = "215175753"  # monitor.yml workflow ID
 PLAYER_NAME = "fajoogaloo"
 FLOOR_15_HEIGHT = 1500.0
 
@@ -68,10 +69,11 @@ def fetch_workflow_runs(token, per_page=100):
     page = 1
     total_count = None
 
-    print(f"Fetching workflow runs for {REPO_OWNER}/{REPO_NAME}...")
+    print(f"Fetching workflow runs for {REPO_OWNER}/{REPO_NAME} (workflow: {WORKFLOW_NAME})...")
 
     while True:
-        url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/actions/runs"
+        # Use workflow-specific endpoint to only get monitor workflow runs
+        url = f"{GITHUB_API}/repos/{REPO_OWNER}/{REPO_NAME}/actions/workflows/{WORKFLOW_ID}/runs"
         params = {
             "per_page": per_page,
             "page": page,
@@ -85,22 +87,26 @@ def fetch_workflow_runs(token, per_page=100):
         # Get total count from first page
         if total_count is None:
             total_count = data.get("total_count", 0)
-            print(f"  Total workflow runs (all workflows): {total_count}")
+            print(f"  Total monitor workflow runs: {total_count}")
 
         runs = data.get("workflow_runs", [])
-        if not runs:
-            break
 
-        # Filter to only our monitor workflow
-        monitor_runs = [r for r in runs if r.get("name") == WORKFLOW_NAME]
-        all_runs.extend(monitor_runs)
+        # All runs are already monitor workflow runs (endpoint is workflow-specific)
+        if runs:
+            all_runs.extend(runs)
 
-        print(f"  Page {page}: Found {len(monitor_runs)} monitor runs out of {len(runs)} total runs (cumulative monitor runs: {len(all_runs)})")
+        print(f"  Page {page}: Found {len(runs)} runs (cumulative: {len(all_runs)})")
 
         # Continue until we've fetched all pages
         # Calculate if there are more pages based on total count
         total_fetched = page * per_page
         if total_fetched >= total_count:
+            print(f"  Reached end of pagination (fetched {total_fetched} >= {total_count} total)")
+            break
+
+        # If no runs returned and we haven't reached the total, something's wrong
+        if not runs:
+            print(f"  No runs returned on page {page}, stopping")
             break
 
         page += 1
