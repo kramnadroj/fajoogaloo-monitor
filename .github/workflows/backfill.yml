@@ -71,9 +71,6 @@ jobs:
             echo "No changes to commit"
           else
             TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-            git commit -m "feat: backfill historic height data - ${TIMESTAMP}
-
-This commit adds historic height data extracted from previous
-workflow run logs."
+            git commit -m "feat: backfill historic height data - ${TIMESTAMP}"
             git push
           fi
