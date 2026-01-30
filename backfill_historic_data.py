@@ -66,6 +66,7 @@ def fetch_workflow_runs(token, per_page=100):
     headers = get_headers(token)
     all_runs = []
     page = 1
+    total_count = None
 
     print(f"Fetching workflow runs for {REPO_OWNER}/{REPO_NAME}...")
 
@@ -81,6 +82,11 @@ def fetch_workflow_runs(token, per_page=100):
         response.raise_for_status()
         data = response.json()
 
+        # Get total count from first page
+        if total_count is None:
+            total_count = data.get("total_count", 0)
+            print(f"  Total workflow runs (all workflows): {total_count}")
+
         runs = data.get("workflow_runs", [])
         if not runs:
             break
@@ -89,13 +95,20 @@ def fetch_workflow_runs(token, per_page=100):
         monitor_runs = [r for r in runs if r.get("name") == WORKFLOW_NAME]
         all_runs.extend(monitor_runs)
 
-        print(f"  Page {page}: Found {len(monitor_runs)} monitor runs (total: {len(all_runs)})")
+        print(f"  Page {page}: Found {len(monitor_runs)} monitor runs out of {len(runs)} total runs (cumulative monitor runs: {len(all_runs)})")
 
-        # Check if there are more pages
-        if len(runs) < per_page:
+        # Continue until we've fetched all pages
+        # Calculate if there are more pages based on total count
+        total_fetched = page * per_page
+        if total_fetched >= total_count:
             break
 
         page += 1
+
+        # Safety limit to prevent infinite loops
+        if page > 100:
+            print(f"  Warning: Reached page limit of 100")
+            break
 
     print(f"Total workflow runs found: {len(all_runs)}")
     return all_runs
