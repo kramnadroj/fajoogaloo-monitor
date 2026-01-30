@@ -1,6 +1,6 @@
 # Deep Dip 2 Player Monitor
 
-Monitors the Trackmania player **fajoogaloo** on the Deep Dip 2 map and sends notifications when they reach floor 15 (1938 meters).
+Monitors the Trackmania player **fajoogaloo** on the Deep Dip 2 map and sends notifications when they reach floor 15 (1500 meters).
 
 ## Current Progress
 
@@ -19,7 +19,7 @@ Monitors the Trackmania player **fajoogaloo** on the Deep Dip 2 map and sends no
 
 - **Monitoring Script**: `monitor_player.py` fetches player data from the Deep Dip 2 API every 10 minutes
 - **Target**: Player `fajoogaloo`
-- **Alert Threshold**: Floor 15 at 1938 meters
+- **Alert Threshold**: Floor 15 at 1500 meters
 - **Schedule**: Runs automatically via GitHub Actions every 10 minutes
 
 ## Setup
