@@ -53,13 +53,14 @@ def get_headers(token):
     }
 
 
-def fetch_workflow_runs(token, per_page=100):
+def fetch_workflow_runs(token, per_page=100, created_filter=None):
     """
     Fetch all workflow runs for the monitor workflow.
 
     Args:
         token: GitHub API token
         per_page: Number of results per page
+        created_filter: Optional date filter (e.g., "<2026-01-06" or ">2025-12-01")
 
     Returns:
         List of workflow run objects
@@ -69,7 +70,8 @@ def fetch_workflow_runs(token, per_page=100):
     page = 1
     total_count = None
 
-    print(f"Fetching workflow runs for {REPO_OWNER}/{REPO_NAME} (workflow: {WORKFLOW_NAME})...")
+    filter_desc = f" (filter: created{created_filter})" if created_filter else ""
+    print(f"Fetching workflow runs for {REPO_OWNER}/{REPO_NAME} (workflow: {WORKFLOW_NAME}){filter_desc}...")
 
     while True:
         # Use workflow-specific endpoint to only get monitor workflow runs
@@ -79,6 +81,8 @@ def fetch_workflow_runs(token, per_page=100):
             "page": page,
             "status": "completed"
         }
+        if created_filter:
+            params["created"] = created_filter
 
         response = requests.get(url, headers=headers, params=params, timeout=30)
         response.raise_for_status()
@@ -265,8 +269,19 @@ def main():
 
     token = get_github_token()
 
-    # Fetch all workflow runs
-    runs = fetch_workflow_runs(token)
+    # Fetch workflow runs in two batches to work around GitHub's 1000-result pagination limit
+    # Batch 1: Recent runs (newest 1000)
+    runs_recent = fetch_workflow_runs(token)
+
+    # Batch 2: Older runs (before Jan 6, 2026) to capture Dec 11 - Jan 5 data
+    print(f"\n{'=' * 60}")
+    print("Fetching older runs (before 2026-01-06) to get complete history...")
+    print('=' * 60)
+    runs_old = fetch_workflow_runs(token, created_filter="<2026-01-06")
+
+    # Combine all runs
+    runs = runs_recent + runs_old
+    print(f"\nTotal runs fetched: {len(runs)} (recent: {len(runs_recent)}, old: {len(runs_old)})")
 
     if not runs:
         print("No workflow runs found.")
