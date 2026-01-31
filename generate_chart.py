@@ -104,8 +104,8 @@ def generate_chart(data):
     ax.legend(loc='best')
     ax.grid(True, alpha=0.3)
 
-    # Format x-axis dates
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M'))
+    # Format x-axis dates (date only, no time)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
     fig.autofmt_xdate()
 
     # Ensure y-axis includes Floor 15 target
