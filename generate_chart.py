@@ -14,6 +14,27 @@ import matplotlib.dates as mdates
 DATA_FILE = Path("data/heights.json")
 OUTPUT_FILE = Path("charts/height_progress.png")
 
+# Floor heights mapping (floor name -> height in meters)
+FLOOR_HEIGHTS = {
+    "Floor 00": 4.0,
+    "Floor 01": 138.0,
+    "Floor 02": 266.0,
+    "Floor 03": 394.0,
+    "Floor 04": 522.0,
+    "Floor 05": 650.0,
+    "Floor 06": 816.0,
+    "Floor 07": 906.0,
+    "Floor 08": 1026.0,
+    "Floor 09": 1170.0,
+    "Floor 10": 1296.0,
+    "Floor 11": 1426.0,
+    "Floor 12": 1554.0,
+    "Floor 13": 1680.0,
+    "Floor 14": 1824.0,
+    "Floor 15": 1938.0,
+    "The End": 2100.0,
+}
+
 def load_height_data():
     """
     Load height data from JSON file.
@@ -64,10 +85,16 @@ def generate_chart(data):
         ax.axhline(y=data['floor_target'], color='red', linestyle='--',
                    linewidth=2, label=f"Floor 15 Target ({data['floor_target']}m)")
         ax.set_xlabel('Time', fontsize=12)
-        ax.set_ylabel('Height (meters)', fontsize=12)
+        ax.set_ylabel('Floor', fontsize=12)
         ax.set_title('No Active Sessions Recorded Yet', fontsize=14, fontweight='bold')
         ax.legend()
         ax.grid(True, alpha=0.3)
+        # Set y-axis ticks to floor numbers
+        floor_heights = list(FLOOR_HEIGHTS.values())
+        floor_labels = list(FLOOR_HEIGHTS.keys())
+        ax.set_yticks(floor_heights)
+        ax.set_yticklabels(floor_labels, fontsize=8)
+        ax.set_ylim(0, FLOOR_HEIGHTS["The End"])
         plt.tight_layout()
         OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(OUTPUT_FILE, dpi=150, bbox_inches='tight')
@@ -100,7 +127,7 @@ def generate_chart(data):
 
     # Labels and formatting
     ax.set_xlabel('Time', fontsize=12)
-    ax.set_ylabel('Height (meters)', fontsize=12)
+    ax.set_ylabel('Floor', fontsize=12)
     ax.legend(loc='best')
     ax.grid(True, alpha=0.3)
 
@@ -108,10 +135,14 @@ def generate_chart(data):
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
     fig.autofmt_xdate()
 
-    # Ensure y-axis includes Floor 15 target
-    y_min, y_max = ax.get_ylim()
-    if y_max < data['floor_target']:
-        ax.set_ylim(y_min, data['floor_target'] * 1.1)
+    # Set y-axis ticks to floor numbers
+    floor_heights = list(FLOOR_HEIGHTS.values())
+    floor_labels = list(FLOOR_HEIGHTS.keys())
+    ax.set_yticks(floor_heights)
+    ax.set_yticklabels(floor_labels, fontsize=8)
+
+    # Ensure y-axis includes Floor 15 target and some headroom
+    ax.set_ylim(0, max(data['floor_target'] * 1.1, FLOOR_HEIGHTS["The End"]))
 
     # Save chart
     plt.tight_layout()
