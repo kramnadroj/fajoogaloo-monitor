@@ -29,6 +29,30 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Get last recorded height
+        id: last_height
+        run: |
+          # Get the last live_height from data file (most recent non-null value)
+          if [ -f "data/heights.json" ]; then
+            LAST_HEIGHT=$(python3 -c "
+import json
+with open('data/heights.json') as f:
+    data = json.load(f)
+# Find most recent data point with a live_height
+for point in reversed(data.get('data_points', [])):
+    if point.get('live_height') is not None:
+        print(point['live_height'])
+        break
+else:
+    print('')
+")
+            echo "last_height=${LAST_HEIGHT}" >> "$GITHUB_OUTPUT"
+            echo "Last recorded height: ${LAST_HEIGHT}"
+          else
+            echo "last_height=" >> "$GITHUB_OUTPUT"
+            echo "No previous height data"
+          fi
+
       - name: Run monitoring script and check for floor 15
         id: check_notification
         run: |
@@ -36,11 +60,25 @@ jobs:
           OUTPUT=$(python monitor_player.py)
           echo "$OUTPUT"
 
-          # Check if player is currently playing (has live session)
+          # Extract current live height if playing
+          CURRENT_HEIGHT=""
           if echo "$OUTPUT" | grep -q "LIVE Height"; then
-            echo "is_playing=true" >> "$GITHUB_OUTPUT"
+            CURRENT_HEIGHT=$(echo "$OUTPUT" | grep -o 'LIVE Height: [0-9.]*' | awk '{print $3}')
+            echo "current_height=${CURRENT_HEIGHT}" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Compare current height to last height to determine if actively playing
+          LAST_HEIGHT="${{ steps.last_height.outputs.last_height }}"
+          if [ -n "$CURRENT_HEIGHT" ] && [ "$CURRENT_HEIGHT" != "$LAST_HEIGHT" ]; then
+            echo "is_active=true" >> "$GITHUB_OUTPUT"
+            echo "Height changed: ${LAST_HEIGHT} -> ${CURRENT_HEIGHT} (active)"
           else
-            echo "is_playing=false" >> "$GITHUB_OUTPUT"
+            echo "is_active=false" >> "$GITHUB_OUTPUT"
+            if [ -n "$CURRENT_HEIGHT" ]; then
+              echo "Height unchanged: ${CURRENT_HEIGHT} (idle)"
+            else
+              echo "No live session (idle)"
+            fi
           fi
 
           # Check if floor 15 was reached
@@ -107,11 +145,11 @@ jobs:
                ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       - name: Schedule follow-up run if player is active
-        if: steps.check_notification.outputs.is_playing == 'true'
+        if: steps.check_notification.outputs.is_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Player is actively playing - scheduling follow-up check in 3 minutes"
+          echo "Player is actively playing (height changed) - scheduling follow-up check in 3 minutes"
           sleep 180
           gh workflow run monitor.yml
           echo "Follow-up workflow triggered"
