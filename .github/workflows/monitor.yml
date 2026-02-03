@@ -34,7 +34,7 @@ jobs:
         run: |
           # Get the last live_height from data file (most recent non-null value)
           if [ -f "data/heights.json" ]; then
-            LAST_HEIGHT=$(python3 -c "import json; data = json.load(open('data/heights.json')); heights = [p['live_height'] for p in data.get('data_points', []) if p.get('live_height') is not None]; print(heights[-1] if heights else '')")
+            LAST_HEIGHT=$(python3 -c "import json; data = json.load(open('data/heights.json')); heights = [p['live_height'] for p in data.get('data_points', []) if p.get('live_height') is not None]; print(round(heights[-1], 2) if heights else '')")
             echo "last_height=${LAST_HEIGHT}" >> "$GITHUB_OUTPUT"
             echo "Last recorded height: ${LAST_HEIGHT}"
           else
