@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -34,6 +35,13 @@ jobs:
           # Run script and capture output
           OUTPUT=$(python monitor_player.py)
           echo "$OUTPUT"
+
+          # Check if player is currently playing (has live session)
+          if echo "$OUTPUT" | grep -q "LIVE Height"; then
+            echo "is_playing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_playing=false" >> "$GITHUB_OUTPUT"
+          fi
 
           # Check if floor 15 was reached
           if echo "$OUTPUT" | grep -q "FLOOR 15 REACHED"; then
@@ -97,3 +105,13 @@ jobs:
                  }]
                }' \
                ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Schedule follow-up run if player is active
+        if: steps.check_notification.outputs.is_playing == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Player is actively playing - scheduling follow-up check in 3 minutes"
+          sleep 180
+          gh workflow run monitor.yml
+          echo "Follow-up workflow triggered"
