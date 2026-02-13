@@ -33,7 +33,7 @@ FLOOR_HEIGHTS = {
     "Floor 14": 1482.0,
     "Floor 15": 1586.0,
     "Floor 16": 1690.0,
-    "The End": 2100.0,
+    "The End": 1794.0,
 }
 
 def load_height_data():
