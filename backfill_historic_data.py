@@ -28,7 +28,7 @@ REPO_NAME = "fajoogaloo-monitor"
 WORKFLOW_NAME = "Monitor Deep Dip 2 Progress"
 WORKFLOW_ID = "215175753"  # monitor.yml workflow ID
 PLAYER_NAME = "fajoogaloo"
-FLOOR_15_HEIGHT = 1500.0
+FLOOR_15_HEIGHT = 1586.0
 
 # GitHub API base URL
 GITHUB_API = "https://api.github.com"

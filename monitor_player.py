@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Configuration
 PLAYER_NAME = "fajoogaloo"
-FLOOR_15_HEIGHT = 1500.0  # meters
+FLOOR_15_HEIGHT = 1586.0  # meters
 API_BASE_URL = "https://dips-plus-plus.xk.io"
 
 def get_player_height(player_name):
