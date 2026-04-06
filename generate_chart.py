@@ -109,6 +109,10 @@ def generate_chart(data):
     ax.plot(timestamps, heights, marker='o', linewidth=2, markersize=4,
             color='#2E86AB', label='Live Height')
 
+    # Highlight the latest point in red so it's easy to spot during a run
+    ax.scatter([timestamps[-1]], [heights[-1]], color='red', s=80, zorder=5,
+               label=f'Latest ({heights[-1]:.1f}m)')
+
     # Add Floor 15 target line
     ax.axhline(y=data['floor_target'], color='red', linestyle='--',
                linewidth=2, label=f"Floor 15 Target ({data['floor_target']}m)")
