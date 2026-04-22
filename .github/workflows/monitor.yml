@@ -84,6 +84,15 @@ jobs:
             echo "floor_15_reached=false" >> "$GITHUB_OUTPUT"
           fi
 
+          # Check if Jave reached their target floor
+          if echo "$OUTPUT" | grep -q "JAVE FLOOR REACHED"; then
+            echo "jave_floor_reached=true" >> "$GITHUB_OUTPUT"
+            JAVE_HEIGHT=$(echo "$OUTPUT" | grep -A3 "JAVE FLOOR REACHED" | grep "Height:" | awk '{printf "%.2f", $2}')
+            echo "jave_height=${JAVE_HEIGHT}" >> "$GITHUB_OUTPUT"
+          else
+            echo "jave_floor_reached=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate height tracking chart
         run: |
           python generate_chart.py
@@ -122,6 +131,36 @@ jobs:
                      {
                        "name": "Floor 15 Threshold",
                        "value": "1938m",
+                       "inline": true
+                     }
+                   ],
+                   "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
+                   "footer": {
+                     "text": "Deep Dip 2 Monitor"
+                   }
+                 }]
+               }' \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Send Discord notification for Jave
+        if: steps.check_notification.outputs.jave_floor_reached == 'true'
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d '{
+                 "content": "@everyone",
+                 "embeds": [{
+                   "title": "🎉 JAVE FLOOR REACHED! 🎉",
+                   "description": "**Jave** has reached the target height!",
+                   "color": 15844367,
+                   "fields": [
+                     {
+                       "name": "Height Achieved",
+                       "value": "${{ steps.check_notification.outputs.jave_height }}m",
+                       "inline": true
+                     },
+                     {
+                       "name": "Target",
+                       "value": "2500m",
                        "inline": true
                      }
                    ],

@@ -16,6 +16,9 @@ PLAYER_NAME = "fajoogaloo"
 FLOOR_15_HEIGHT = 1586.0  # meters
 API_BASE_URL = "https://dips-plus-plus.xk.io"
 
+JAVE_PLAYER_NAME = "Jave"
+JAVE_FLOOR_TARGET = 2500.0  # meters (placeholder)
+
 def get_player_height(player_name):
     """
     Fetch player's CURRENT live height from the Deep Dip 2 API.
@@ -116,6 +119,20 @@ def send_notification(player_name, height, player_data):
     # Options: Discord webhook, Email, Slack, SMS, etc.
     # For now, just print to stdout
 
+def check_jave_floor_reached(height):
+    return height is not None and height >= JAVE_FLOOR_TARGET
+
+def send_jave_notification(height):
+    timestamp = datetime.now().isoformat()
+    print("=" * 60)
+    print("🎉 JAVE FLOOR REACHED! 🎉")
+    print("=" * 60)
+    print(f"Player: {JAVE_PLAYER_NAME}")
+    print(f"Height: {height}m")
+    print(f"Timestamp: {timestamp}")
+    print(f"Target: {JAVE_FLOOR_TARGET}m")
+    print("=" * 60)
+
 def record_height_data(height, is_playing, player_name):
     """
     Record height data to JSON file for historical tracking.
@@ -182,30 +199,34 @@ def main():
 
     if player_data is None:
         print(f"Player '{PLAYER_NAME}' not found on leaderboard")
-        return
-
-    if height is None:
+    elif height is None:
         print(f"Player '{PLAYER_NAME}' is not currently playing (no live session)")
         if player_data and 'height' in player_data:
             print(f"Personal Best: {player_data['height']}m")
         record_height_data(None, False, PLAYER_NAME)
-        return
-
-    # Display current live height and PB
-    print(f"🔴 LIVE Height: {height:.2f}m")
-    if 'pb_height' in player_data:
-        print(f"🏆 Personal Best: {player_data['pb_height']}m")
-    print(f"🎯 Floor 15 Target: {FLOOR_15_HEIGHT}m")
-    record_height_data(height, True, PLAYER_NAME)
-
-    # Check if floor 15 has been reached
-    if check_floor_15_reached(height):
-        send_notification(PLAYER_NAME, height, player_data)
     else:
-        meters_remaining = FLOOR_15_HEIGHT - height
-        print(f"📊 Distance to Floor 15: {meters_remaining:.2f}m remaining")
-        progress_pct = (height / FLOOR_15_HEIGHT) * 100
-        print(f"📈 Progress: {progress_pct:.1f}%")
+        # Display current live height and PB
+        print(f"🔴 LIVE Height: {height:.2f}m")
+        if 'pb_height' in player_data:
+            print(f"🏆 Personal Best: {player_data['pb_height']}m")
+        print(f"🎯 Floor 15 Target: {FLOOR_15_HEIGHT}m")
+        record_height_data(height, True, PLAYER_NAME)
+
+        # Check if floor 15 has been reached
+        if check_floor_15_reached(height):
+            send_notification(PLAYER_NAME, height, player_data)
+        else:
+            meters_remaining = FLOOR_15_HEIGHT - height
+            print(f"📊 Distance to Floor 15: {meters_remaining:.2f}m remaining")
+            progress_pct = (height / FLOOR_15_HEIGHT) * 100
+            print(f"📈 Progress: {progress_pct:.1f}%")
+
+    # Check Jave's floor (notification only, no data tracking)
+    print("-" * 60)
+    print(f"Checking {JAVE_PLAYER_NAME}'s height...")
+    jave_height, _ = get_player_height(JAVE_PLAYER_NAME)
+    if check_jave_floor_reached(jave_height):
+        send_jave_notification(jave_height)
 
 if __name__ == "__main__":
     main()
