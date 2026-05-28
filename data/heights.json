@@ -1,7 +1,7 @@
 {
   "player": "fajoogaloo",
   "floor_target": 1500.0,
-  "last_updated": "2026-05-28T05:00:17.287125",
+  "last_updated": "2026-05-28T05:02:11.811114",
   "data_points": [
     {
       "timestamp": "2025-12-15T23:57:44Z",
@@ -65645,6 +65645,11 @@
     },
     {
       "timestamp": "2026-05-28T05:00:17.287125",
+      "live_height": 177.39700317382812,
+      "is_playing": true
+    },
+    {
+      "timestamp": "2026-05-28T05:02:11.811114",
       "live_height": 177.39700317382812,
       "is_playing": true
     }
