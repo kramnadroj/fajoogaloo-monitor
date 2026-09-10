@@ -20,6 +20,15 @@ def get_player_height(player_name):
     """
     Fetch player's CURRENT live height from the Deep Dip 2 API.
 
+    Uses /live_heights/global as the source of truth for "is this player
+    playing right now" (per the API's own docs, /live_heights/<wsid> is
+    marked "prefer global"). /leaderboard/global is NOT a reliable way to
+    find a live player: it's a capped, unsorted snapshot covering only a
+    small slice of all registered players' all-time personal bests, so a
+    currently-live player can easily be absent from it. It's used here only
+    as a best-effort source for displaying a personal-best height, and its
+    failure must never block live-height detection/recording.
+
     Args:
         player_name: The name of the player to monitor
 
@@ -27,50 +36,55 @@ def get_player_height(player_name):
         tuple: (current_height, player_data) or (None, None) if player not found
     """
     try:
-        # Step 1: Get player's wsid from leaderboard
-        response = requests.get(f"{API_BASE_URL}/leaderboard/global", timeout=10)
+        # Step 1: Check who's currently live - authoritative for live status.
+        response = requests.get(f"{API_BASE_URL}/live_heights/global", timeout=10)
         response.raise_for_status()
-        leaderboard_data = response.json()
+        live_players = response.json()
 
-        wsid = None
-        pb_height = None
-        player_data = None
-
-        # Search for player in leaderboard to get their wsid
-        if isinstance(leaderboard_data, list):
-            for entry in leaderboard_data:
-                entry_name = entry.get('name', '').lower()
-                if entry_name == player_name.lower():
-                    wsid = entry.get('wsid')
-                    pb_height = entry.get('height', 0)
-                    player_data = entry
+        live_entry = None
+        if isinstance(live_players, list):
+            for entry in live_players:
+                if entry.get('display_name', '').lower() == player_name.lower():
+                    live_entry = entry
                     break
 
-        if not wsid:
-            # Player not found on leaderboard
+        # Step 2: Best-effort lookup of personal-best height for display.
+        # Not finding the player here does NOT mean the player doesn't exist -
+        # it just means they're outside the capped snapshot this call returns.
+        pb_height = None
+        wsid = live_entry.get('user_id') if live_entry else None
+        try:
+            lb_response = requests.get(f"{API_BASE_URL}/leaderboard/global", timeout=10)
+            lb_response.raise_for_status()
+            leaderboard_data = lb_response.json()
+            if isinstance(leaderboard_data, list):
+                for entry in leaderboard_data:
+                    if entry.get('name', '').lower() == player_name.lower():
+                        pb_height = entry.get('height', 0)
+                        if not wsid:
+                            wsid = entry.get('wsid')
+                        break
+        except requests.RequestException as e:
+            print(f"Warning: leaderboard PB lookup failed (non-fatal): {e}", file=sys.stderr)
+
+        if live_entry is not None:
+            current_height = live_entry.get('height')
+            player_data = dict(live_entry)
+            player_data['name'] = live_entry.get('display_name', player_name)
+            player_data['wsid'] = wsid
+            player_data['pb_height'] = pb_height
+            player_data['current_height'] = current_height
+            player_data['live_data'] = live_entry
+            return current_height, player_data
+
+        if wsid is None and pb_height is None:
+            # Not live, and not found on the leaderboard snapshot either.
             return None, None
 
-        # Step 2: Get player's live height using their wsid
-        response = requests.get(f"{API_BASE_URL}/live_heights/{wsid}", timeout=10)
-        response.raise_for_status()
-        live_data = response.json()
-
-        # Extract current height from last_5_points
-        if 'last_5_points' in live_data and len(live_data['last_5_points']) > 0:
-            # Most recent point is first in array: [height, timestamp]
-            current_height = live_data['last_5_points'][0][0]
-
-            # Enrich player data with live info
-            player_data['current_height'] = current_height
-            player_data['pb_height'] = pb_height
-            player_data['live_data'] = live_data
-
-            return current_height, player_data
-        else:
-            # No live data available, player might not be currently playing
-            # Return None to indicate no current session
-            print(f"No live session data for {player_name} (PB: {pb_height}m)")
-            return None, player_data
+        # Known player (found via leaderboard), but no live session right now.
+        player_data = {'name': player_name, 'wsid': wsid, 'height': pb_height, 'pb_height': pb_height}
+        print(f"No live session data for {player_name} (PB: {pb_height}m)")
+        return None, player_data
 
     except requests.RequestException as e:
         print(f"Error fetching data from API: {e}", file=sys.stderr)
@@ -186,14 +200,14 @@ def main():
 
     if height is None:
         print(f"Player '{PLAYER_NAME}' is not currently playing (no live session)")
-        if player_data and 'height' in player_data:
+        if player_data and player_data.get('height') is not None:
             print(f"Personal Best: {player_data['height']}m")
         record_height_data(None, False, PLAYER_NAME)
         return
 
     # Display current live height and PB
     print(f"🔴 LIVE Height: {height:.2f}m")
-    if 'pb_height' in player_data:
+    if player_data.get('pb_height') is not None:
         print(f"🏆 Personal Best: {player_data['pb_height']}m")
     print(f"🎯 Floor 15 Target: {FLOOR_15_HEIGHT}m")
     record_height_data(height, True, PLAYER_NAME)
